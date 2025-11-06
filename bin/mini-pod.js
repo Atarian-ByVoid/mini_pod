@@ -28,7 +28,8 @@ const header = blessed.box({
     "{green-fg}R{/green-fg} refresh  " +
     "{green-fg}TAB{/green-fg} focus  " +
     "{green-fg}Q{/green-fg} back/quit  " +
-    "{green-fg}Ctrl+C{/green-fg} exit",
+    "{green-fg}Ctrl+C{/green-fg} exit  " +
+       "{green-fg}X{/green-fg} contexts",
   style: { bg: "black", fg: "white" },
   align: "left",
   padding: { left: 1 },
@@ -335,7 +336,6 @@ function refreshPods() {
   });
 }
 
-
 // ---------- Details & Logs ----------
 function showDetailsFor(index) {
   if (index <= 0) return;
@@ -478,7 +478,6 @@ function showMetricsForPod(podName) {
   updateMetrics();
   metricsInterval = setInterval(updateMetrics, 2500);
 }
-
 
 function stopMetrics() {
   if (metricsInterval) {
@@ -645,7 +644,6 @@ screen.key(["c", "C"], () => {
   showNamespaceSelector();
 });
 
-
 // ---------- Initialization ----------
 function init() {
   setFooter("initializing...");
@@ -659,6 +657,280 @@ function init() {
     });
   });
 }
+
+// ---------- Context Selector (kubectx-like) ----------
+const contextBox = blessed.list({
+  parent: screen,
+  top: "center",
+  left: "center",
+  width: "50%",
+  height: "60%",
+  label: " Select Context ",
+  tags: true,
+  border: { type: "line" },
+  hidden: true,
+  keys: true,
+  vi: true,
+  mouse: true,
+  style: {
+    fg: "white",
+    bg: "black",
+    border: { fg: "cyan" },
+    selected: { bg: "cyan", fg: "black", bold: true },
+    label: { fg: "magenta", bold: true },
+  },
+  scrollbar: {
+    ch: " ",
+    track: { bg: "gray" },
+    style: { bg: "cyan" },
+  },
+});
+
+function showContextSelector() {
+  setFooter("loading contexts...");
+  const proc = spawn("kubectl", ["config", "get-contexts", "-o", "name"]);
+  let out = "";
+  proc.stdout.on("data", (d) => (out += d.toString()));
+  proc.on("close", () => {
+    const contexts = out
+      .trim()
+      .split("\n")
+      .filter(Boolean);
+    contextBox.setItems(
+      contexts.map((ctx) =>
+        ctx === currentContext
+          ? `{bold}{cyan-fg}${ctx}{/cyan-fg}{/bold} (current)`
+          : ctx
+      )
+    );
+    contextBox.show();
+    contextBox.focus();
+    screen.render();
+    setFooter("select context ↑↓ + Enter, q/ESC to cancel");
+  });
+}
+
+contextBox.key(["escape", "q"], () => {
+  contextBox.hide();
+  podList.focus();
+  screen.render();
+});
+
+contextBox.key(["enter"], () => {
+  const selected = contextBox.getItem(contextBox.selected)?.content;
+  const ctx = selected.replace(/\{[^}]+\}/g, "").replace("(current)", "").trim();
+  if (!ctx || ctx === currentContext) {
+    contextBox.hide();
+    podList.focus();
+    screen.render();
+    return;
+  }
+  setFooter(`switching to context ${ctx}...`);
+  exec(`kubectl config use-context ${ctx}`, (err) => {
+    if (err) {
+      setFooter(`{red-fg}Error switching context: ${err.message}{/red-fg}`);
+    } else {
+      currentContext = ctx;
+      contextBox.hide();
+      refreshPods();
+      updateSidebar();
+      podList.focus();
+      setFooter(`context switched to ${ctx}`);
+    }
+    screen.render();
+  });
+});
+
+screen.key(["x", "X"], () => {
+  if (contextBox.visible) return;
+  showContextSelector();
+});
+
+// ---------- Pod Delete & Rollout ----------
+function deleteSelectedPod() {
+  const idx = podList.selected;
+  if (idx <= 0) return;
+  const p = pods[idx - 1];
+  if (!p) return;
+
+  const confirmBox = blessed.question({
+    parent: screen,
+    top: "center",
+    left: "center",
+    width: "50%",
+    height: "20%",
+    label: " Confirm Delete ",
+    tags: true,
+    border: { type: "line" },
+    style: {
+      fg: "white",
+      bg: "black",
+      border: { fg: "red" },
+      label: { fg: "red", bold: true },
+    },
+  });
+
+  confirmBox.ask(
+    `{red-fg}Are you sure you want to delete pod{/red-fg} {bold}${p.name}{/bold}? (y/n)`,
+    (err, answer) => {
+      if (answer) {
+        setFooter(`deleting pod ${p.name}...`);
+        exec(`kubectl delete pod ${p.name} -n ${currentNamespace}`, (error, stdout, stderr) => {
+          if (error) {
+            setFooter(`{red-fg}Error deleting pod: ${stderr || error.message}{/red-fg}`);
+          } else {
+            setFooter(`pod ${p.name} deleted`);
+            refreshPods();
+          }
+          screen.render();
+        });
+      } else {
+        setFooter("delete cancelled");
+        screen.render();
+      }
+      confirmBox.hide();
+      podList.focus();
+    }
+  );
+}
+
+function rolloutRestartPod() {
+  const idx = podList.selected;
+  if (idx <= 0) return;
+  const p = pods[idx - 1];
+  if (!p) return;
+
+  setFooter(`rolling out restart for ${p.name}...`);
+  exec(`kubectl rollout restart pod ${p.name} -n ${currentNamespace}`, (error, stdout, stderr) => {
+    if (error) {
+      setFooter(`{red-fg}Error rollout restart: ${stderr || error.message}{/red-fg}`);
+    } else {
+      setFooter(`rollout restart triggered for ${p.name}`);
+      refreshPods();
+    }
+    screen.render();
+  });
+}
+
+podList.key(["d", "D"], () => {
+  deleteSelectedPod();
+});
+
+podList.key(["o", "O"], () => {
+  rolloutRestartPod();
+});
+
+// ---------- Pod Exec ----------
+const execBox = blessed.box({
+  parent: screen,
+  top: 1,
+  left: "30%",
+  width: "70%",
+  height: "90%-1",
+  label: " Exec (Press Q to go back) ",
+  tags: true,
+  border: { type: "line" },
+  style: {
+    fg: "white",
+    bg: "black",
+    border: { fg: "yellow" },
+    label: { fg: "yellow", bold: true },
+  },
+  scrollable: true,
+  alwaysScroll: true,
+  hidden: true,
+  keys: true,
+  vi: true,
+  scrollbar: {
+    ch: " ",
+    track: { bg: "gray" },
+    style: { bg: "yellow" },
+  },
+  padding: { left: 1, right: 1 },
+});
+
+const execInput = blessed.textbox({
+  parent: screen,
+  bottom: 0,
+  left: "30%",
+  width: "70%",
+  height: 3,
+  label: " Enter command ",
+  tags: true,
+  border: { type: "line" },
+  style: {
+    fg: "white",
+    bg: "black",
+    border: { fg: "yellow" },
+    label: { fg: "yellow", bold: true },
+  },
+  inputOnFocus: true,
+  hidden: true,
+});
+
+let execProcess = null;
+
+function startExecForPod(podName) {
+  execBox.setContent(`{yellow-fg}Enter a command to execute in pod ${podName}{/yellow-fg}\n`);
+  execBox.show();
+  execInput.show();
+  execInput.clearValue();
+  execInput.focus();
+  screen.render();
+
+  execInput.once("submit", (cmd) => {
+    if (!cmd) {
+      execBox.hide();
+      execInput.hide();
+      detailsBox.show();
+      detailsBox.focus();
+      screen.render();
+      return;
+    }
+
+    execBox.insertBottom(`\n$ ${cmd}\n`);
+    screen.render();
+
+    // Spawn exec
+    execProcess = spawn("kubectl", ["exec", "-n", currentNamespace, podName, "--", "sh", "-c", cmd]);
+    
+    execProcess.stdout.on("data", (d) => {
+      execBox.insertBottom(d.toString());
+      execBox.setScrollPerc(100);
+      screen.render();
+    });
+    execProcess.stderr.on("data", (d) => {
+      execBox.insertBottom(`{red-fg}${d.toString()}{/red-fg}`);
+      execBox.setScrollPerc(100);
+      screen.render();
+    });
+    execProcess.on("close", () => {
+      execBox.insertBottom("{gray-fg}\n--- Command finished ---{/gray-fg}\n");
+      screen.render();
+    });
+  });
+}
+
+execBox.key(["q", "escape"], () => {
+  if (execProcess) {
+    try { execProcess.kill(); } catch (e) {}
+    execProcess = null;
+  }
+  execBox.hide();
+  execInput.hide();
+  detailsBox.show();
+  detailsBox.focus();
+  screen.render();
+});
+
+// ---------- Binding podList for exec ----------
+podList.key(["e", "E"], () => {
+  const idx = podList.selected;
+  if (idx <= 0) return;
+  const p = pods[idx - 1];
+  if (!p) return;
+  startExecForPod(p.name);
+});
 
 setInterval(() => {
   refreshPods();
