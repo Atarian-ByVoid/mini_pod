@@ -17,9 +17,9 @@ cd mini-pod
 ```bash
 chmod +x bin/mini-pod.js
 ```
-### 3. Instale globalmente
+### 3. Instale os modulos
 ```bash
-npm install -g .
+npm install
 ```
 ### 4. Instale globalmente
 ```bash
