@@ -17,13 +17,15 @@ cd mini-pod
 ```bash
 chmod +x bin/mini-pod.js
 ```
-
 ### 3. Instale globalmente
 ```bash
 npm install -g .
 ```
-
-### 4. Inicie o projeto
+### 4. Instale globalmente
+```bash
+npm install -g .
+```
+### 5. Inicie o projeto
 ```bash
 mini-pod
 ```
