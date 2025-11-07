@@ -1,61 +1,73 @@
-# 🐳 Mini Pod — Kubernetes Terminal Dashboard
+# Mini Pod — Kubernetes Terminal Dashboard
 
-Uma ferramenta leve e interativa feita em **Node.js + Blessed** para visualizar pods, status e logs diretamente no terminal.  
-Inspirado na simplicidade do **k9s**, mas projetado para uso rápido e minimalista.
+**Mini Pod** is a lightweight, interactive terminal dashboard built with **Node.js** and **Blessed**.
+It allows you to visualize Kubernetes pods, statuses, and logs directly from the terminal.
+Inspired by the simplicity of **k9s**, it is designed for fast and minimalistic usage.
 
 ---
 
-## 🚀 Instalação
+## Installation
 
-### 1. Clone o repositório
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/carlosalberto/mini-pod.git
 cd mini-pod
 ```
 
-### 2. Dê permissão de execução
+### 2. Grant execution permission
+
 ```bash
 chmod +x bin/mini-pod.js
 ```
-### 3. Instale os modulos
+
+### 3. Install dependencies
+
 ```bash
 npm install
 ```
-### 4. Instale globalmente
+
+### 4. Install globally
+
 ```bash
 npm install -g .
 ```
-### 5. Inicie o projeto
+
+### 5. Start the application
+
 ```bash
 mini-pod
 ```
 
 ---
 
-## ⚙️ Sistemas operacionais compatíveis
-- 🐧 **Linux**
-- 🍎 **macOS**
+## Supported Operating Systems
 
-> 💡 O Mini Pod é executado diretamente no terminal e requer apenas o Node.js instalado.
+* Linux
+* macOS
 
----
-
-## 🧰 Dependências
-O projeto utiliza:
-- [blessed](https://www.npmjs.com/package/blessed) → interface TUI no terminal  
-- [child_process](https://nodejs.org/api/child_process.html) → execução de comandos do Kubernetes
+> Mini Pod runs directly in the terminal and only requires Node.js to be installed.
 
 ---
 
-## 🧩 Desenvolvimento local
+## Dependencies
 
-Se quiser testar alterações antes de instalar globalmente:
+The project uses the following core dependencies:
+
+* [blessed](https://www.npmjs.com/package/blessed) — Terminal User Interface library
+* [child_process](https://nodejs.org/api/child_process.html) — Executes Kubernetes CLI commands
+
+---
+
+## Local Development
+
+To test or modify the project locally before installing globally:
 
 ```bash
 node bin/mini-pod.js
 ```
 
-Ou reinstalar a versão local:
+Or to reinstall your local version:
 
 ```bash
 npm uninstall -g mini-pod
@@ -64,22 +76,23 @@ npm install -g .
 
 ---
 
-## 🪄 Exemplos de uso
+## Usage Examples
 
 ```bash
-# Abre o painel principal
+# Open the main dashboard
 mini-pod
 
-# Mostra ajuda (caso implementado)
+# Display help information (if implemented)
 mini-pod --help
 ```
 
 ---
 
-## 📄 Licença
-Distribuído sob a licença **MIT**.  
-Sinta-se livre para modificar, aprimorar e compartilhar! ✨
+## License
+
+Distributed under the **MIT License**.
+You are free to modify, enhance, and distribute this project.
 
 ---
 
-Feito por [Carlos Alberto](https://github.com/carlosalberto)
+Developed by [Carlos Alberto](https://github.com/carlosalberto)
