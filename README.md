@@ -95,4 +95,4 @@ You are free to modify, enhance, and distribute this project.
 
 ---
 
-Developed by [Carlos Alberto](https://github.com/carlosalberto)
+Developed by [Carlos Alberto](https://github.com/Atarian-ByVoid/mini_pod)
