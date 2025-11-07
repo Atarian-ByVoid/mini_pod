@@ -29,12 +29,15 @@ export const header = blessed.box({
       "{green-fg}Enter{/green-fg} details  " +
       "{green-fg}L{/green-fg} logs  " +
       "{green-fg}M{/green-fg} metrics  " +
+      "{green-fg}E{/green-fg} exec  " +
+      "{green-fg}D{/green-fg} delete  " +
+      "{green-fg}O{/green-fg} rollout  " +
       "{green-fg}C{/green-fg} namespaces  " +
+      "{green-fg}X{/green-fg} contexts  " +
       "{green-fg}R{/green-fg} refresh  " +
       "{green-fg}TAB{/green-fg} focus  " +
       "{green-fg}Q{/green-fg} back/quit  " +
-      "{green-fg}Ctrl+C{/green-fg} exit  " +
-      "{green-fg}X{/green-fg} contexts",
+      "{green-fg}Ctrl+C{/green-fg} exit",
     style: { bg: "black", fg: "white" },
     align: "left",
     padding: { left: 1 },
