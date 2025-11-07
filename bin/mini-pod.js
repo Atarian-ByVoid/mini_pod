@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// --------------------------------------------------
+// 🐳 Módulos e Configuração Inicial (Mini Pod)
+// --------------------------------------------------
+
 import blessed from "blessed";
 import { exec, spawn } from "child_process";
 
@@ -10,6 +14,10 @@ const screen = blessed.screen({
   dockBorders: true,
   style: { bg: "black", fg: "white" },
 });
+
+// --------------------------------------------------
+// 🎨 Elementos da Interface Gráfica (Blessed Widgets)
+// --------------------------------------------------
 
 const header = blessed.box({
   parent: screen,
@@ -34,7 +42,6 @@ const header = blessed.box({
   align: "left",
   padding: { left: 1 },
 });
-
 
 const sidebar = blessed.box({
   parent: screen,
@@ -184,7 +191,10 @@ let logProcess = null;
 let currentContext = "unknown";
 let currentCluster = "unknown";
 
-// ---------- Util helpers ----------
+// --------------------------------------------------
+// 🛠️ Funções Utilitárias
+// --------------------------------------------------
+
 function setFooter(text) {
   footer.setContent(` {cyan-fg}Status:{/cyan-fg} ${text}`);
   screen.render();
@@ -202,7 +212,9 @@ function pad(text, len) {
   return text.toString().padEnd(len, " ");
 }
 
-// ---------- KUBECTL INTERACTIONS ----------
+// --------------------------------------------------
+// ⚙️ Funções de Interação com KUBECTL
+// --------------------------------------------------
 
 function runJsonCmd(cmdArgs, callback) {
   const proc = spawn("kubectl", cmdArgs);
@@ -280,7 +292,10 @@ function getTopForNamespace(namespace, cb) {
   });
 }
 
-// ---------- UI Updaters ----------
+// --------------------------------------------------
+// 🔄 Funções de Atualização da UI
+// --------------------------------------------------
+
 function updateSidebar() {
   getCurrentContextInfo(() => {
     const header = `{bold}{magenta-fg}Context:{/magenta-fg}{/bold} ${currentContext}\n{bold}{cyan-fg}Cluster:{/cyan-fg}{/bold} ${currentCluster}\n{bold}Namespace:{/bold} ${currentNamespace}\n\n`;
@@ -336,7 +351,10 @@ function refreshPods() {
   });
 }
 
-// ---------- Details & Logs ----------
+// --------------------------------------------------
+// 📝 Funções de Detalhes (Describe, Logs, Metrics)
+// --------------------------------------------------
+
 function showDetailsFor(index) {
   if (index <= 0) return;
   const p = pods[index - 1];
@@ -490,7 +508,10 @@ function stopMetrics() {
   screen.render();
 }
 
-// ---------- Key bindings ----------
+// --------------------------------------------------
+// ⌨️ Bindings de Teclas Principais (podList, detailsBox, logBox)
+// --------------------------------------------------
+
 podList.key(["enter"], () => {
   const idx = podList.selected;
   showDetailsFor(idx);
@@ -518,7 +539,6 @@ podList.key(["m", "M"], () => {
   if (!p) return;
   showMetricsForPod(p.name);
 });
-
 
 logBox.key(["q", "escape"], () => {
   stopLogs();
@@ -561,7 +581,10 @@ screen.key(["C-c"], () => {
   process.exit(0);
 });
 
-// ---------- Namespace Selector (kubens-like) ----------
+// --------------------------------------------------
+// 🏷️ Seletor de Namespace (kubens-like)
+// --------------------------------------------------
+
 const namespaceBox = blessed.list({
   parent: screen,
   top: "center",
@@ -644,21 +667,10 @@ screen.key(["c", "C"], () => {
   showNamespaceSelector();
 });
 
-// ---------- Initialization ----------
-function init() {
-  setFooter("initializing...");
-  exec("kubectl config view --minify --output 'jsonpath={..namespace}'", (err, out) => {
-    currentNamespace = (out || "").trim() || "default";
-    getCurrentContextInfo(() => {
-      refreshPods();
-      updateSidebar();
-      podList.focus();
-      screen.render();
-    });
-  });
-}
+// --------------------------------------------------
+// 🌐 Seletor de Contexto (kubectx-like)
+// --------------------------------------------------
 
-// ---------- Context Selector (kubectx-like) ----------
 const contextBox = blessed.list({
   parent: screen,
   top: "center",
@@ -746,7 +758,10 @@ screen.key(["x", "X"], () => {
   showContextSelector();
 });
 
-// ---------- Pod Delete & Rollout ----------
+// --------------------------------------------------
+// 💣 Funções de Ação (Delete e Rollout Restart)
+// --------------------------------------------------
+
 function deleteSelectedPod() {
   const idx = podList.selected;
   if (idx <= 0) return;
@@ -820,7 +835,10 @@ podList.key(["o", "O"], () => {
   rolloutRestartPod();
 });
 
-// ---------- Pod Exec ----------
+// --------------------------------------------------
+// 💻 Funções de Execução (Exec)
+// --------------------------------------------------
+
 const execBox = blessed.box({
   parent: screen,
   top: 1,
@@ -932,9 +950,26 @@ podList.key(["e", "E"], () => {
   startExecForPod(p.name);
 });
 
+// --------------------------------------------------
+// 🚀 Inicialização e Loop de Atualização
+// --------------------------------------------------
+
 setInterval(() => {
   refreshPods();
   updateSidebar();
 }, 8000);
+
+function init() {
+  setFooter("initializing...");
+  exec("kubectl config view --minify --output 'jsonpath={..namespace}'", (err, out) => {
+    currentNamespace = (out || "").trim() || "default";
+    getCurrentContextInfo(() => {
+      refreshPods();
+      updateSidebar();
+      podList.focus();
+      screen.render();
+    });
+  });
+}
 
 init();
