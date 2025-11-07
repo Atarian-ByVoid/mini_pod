@@ -8,7 +8,7 @@
     "release": "semantic-release"
   },
   "bin": {
-    "mini-pod": "./bin/mini-pod.js"
+    "mini-pod": "./index.js"
   },
   "keywords": [],
   "author": "",

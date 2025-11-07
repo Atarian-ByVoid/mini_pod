@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // --------------------------------------------------
-// 🐳 Módulos e Configuração Inicial (Mini Pod)
+// Módulos e Configuração Inicial (Mini Pod)
 // --------------------------------------------------
 
 import { exec } from "child_process";
