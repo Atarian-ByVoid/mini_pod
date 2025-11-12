@@ -105,15 +105,22 @@ export function refreshPods() {
             return coloredText + " ".repeat(padSize);
         };
 
-        const headerLine = `{bold}{cyan-fg}${pad("POD", 48)}${pad("STATUS", 14)}RESTARTS{/cyan-fg}{/bold}`;
+        // Calcula o maior tamanho de nome de pod para melhor espaçamento
+        const maxNameLen = Math.min(Math.max(...globalState.pods.map((p) => p.name.length), 10), 50);
+        const podColWidth = maxNameLen + 2;
+
+        const headerLine = `{bold}{cyan-fg}${pad("POD", podColWidth)}${pad("READY", 8)}${pad("STATUS", 12)}${pad("AGE", 8)}${pad("IP", 16)}NODE{/cyan-fg}{/bold}`;
 
         const items = [headerLine].concat(
             globalState.pods.map((p) => {
-                const name = pad(p.name, 48);
+                const name = pad(p.name, podColWidth);
+                const ready = pad(p.ready, 8);
                 const statusColored = colorizeStatus(p.status);
-                const statusPadded = padColor(statusColored, 14);
-                const rest = p.restarts.toString().padStart(4, " ");
-                return `${name}${statusPadded}${rest}`;
+                const status = padColor(statusColored, 12);
+                const age = pad(p.age, 8);
+                const ip = pad(p.ip, 16);
+                const node = p.node;
+                return `${name}${ready}${status}${age}${ip}${node}`;
             })
         );
 

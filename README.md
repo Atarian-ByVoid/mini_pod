@@ -64,7 +64,7 @@ The project uses the following core dependencies:
 To test or modify the project locally before installing globally:
 
 ```bash
-node bin/mini-pod.js
+node index  .js
 ```
 
 Or to reinstall your local version:

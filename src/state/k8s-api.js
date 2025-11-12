@@ -28,6 +28,26 @@ export function runJsonCmd(cmdArgs, callback) {
 }
 
 /**
+ * Calcula a idade do pod em um formato legível.
+ */
+function calculatePodAge(creationTimestamp) {
+    if (!creationTimestamp) return "Unknown";
+    const created = new Date(creationTimestamp);
+    const now = new Date();
+    const diff = now - created;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${seconds}s`;
+}
+
+/**
  * Obtém os dados de um Pods em um Namespace específico.
  */
 export function getPodsForNamespace(namespace, cb) {
@@ -37,13 +57,21 @@ export function getPodsForNamespace(namespace, cb) {
         if (err) return cb(err, []);
         try {
             const items = json.items || [];
-            const parsed = items.map((p) => ({
-                name: p.metadata.name,
-                status: p.status.phase || (p.status?.containerStatuses?.[0]?.state?.waiting?.reason ?? "Unknown"),
-                restarts:
-                    p.status?.containerStatuses?.reduce((s, c) => s + (c.restartCount || 0), 0) || 0,
-                containers: (p.spec?.containers || []).map((c) => c.name),
-            }));
+            const parsed = items.map((p) => {
+                const ready = p.status?.containerStatuses?.filter((c) => c.ready).length || 0;
+                const total = p.status?.containerStatuses?.length || 0;
+                return {
+                    name: p.metadata.name,
+                    status: p.status.phase || (p.status?.containerStatuses?.[0]?.state?.waiting?.reason ?? "Unknown"),
+                    restarts:
+                        p.status?.containerStatuses?.reduce((s, c) => s + (c.restartCount || 0), 0) || 0,
+                    containers: (p.spec?.containers || []).map((c) => c.name),
+                    age: calculatePodAge(p.metadata.creationTimestamp),
+                    ready: `${ready}/${total}`,
+                    ip: p.status?.podIP || "N/A",
+                    node: p.spec?.nodeName || "N/A",
+                };
+            });
             cb(null, parsed);
         } catch (e) {
             cb(e, []);

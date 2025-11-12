@@ -413,3 +413,5 @@ export function setupKeyBindings() {
     logBox.key(["q", "escape"], stopLogs);
     metricsBox.key(["q", "escape"], stopMetrics);
 }
+
+
